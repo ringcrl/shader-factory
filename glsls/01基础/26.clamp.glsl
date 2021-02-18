@@ -1,0 +1,58 @@
+#define TWOPI 6.28318530718
+
+// BUILT-IN FUNCTIONS: CLAMP
+//
+// "clamp" function saturates the input below and above the thresholds
+// f(x, min, max) = { max x>max
+//                  { x   max>x>min
+//                  { min min>x
+void main() {
+	vec2 r =  2.0*vec2(gl_FragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
+	vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+	// use [0,1] coordinate system for this example
+	
+	vec3 bgCol = vec3(0.0); // black
+	vec3 col1 = vec3(0.216, 0.471, 0.698); // blue
+	vec3 col2 = vec3(1.00, 0.329, 0.298); // yellow
+	vec3 col3 = vec3(0.867, 0.910, 0.247); // red
+
+	vec3 pixel = bgCol;
+	
+	float edge, variable, ret;
+	
+	// divide the screen into four parts horizontally for different
+	// examples
+	if(p.x < 0.25) { // Part I
+		ret = p.y; // the brightness value is assigned the y coordinate
+		           // it'll create a gradient
+	} 
+	else if(p.x < 0.5) { // Part II
+		float minVal = 0.3; // implementation of clamp
+		float maxVal = 0.6;
+		float variable = p.y;
+		if( variable<minVal ) {
+			ret = minVal;
+		}
+		if( variable>minVal && variable<maxVal ) {
+			ret = variable;
+		}
+		if( variable>maxVal ) {
+			ret = maxVal;
+		}
+	} 
+	else if(p.x < 0.75) { // Part III
+		float minVal = 0.6;
+		float maxVal = 0.8;
+		float variable = p.y;
+		ret = clamp(variable, minVal, maxVal);
+	} 
+	else  { // Part IV
+		float y = cos(5.*TWOPI*p.y); // oscillate between +1 and -1
+		                             // 5 times, vertically
+		y = (y+1.0)*0.5; // map [-1,1] to [0,1]
+		ret = clamp(y, 0.2, 0.8);
+	}
+	
+	pixel = vec3(ret); // make a color out of return value.
+	gl_FragColor = vec4(pixel, 1.0);
+}

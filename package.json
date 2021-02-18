@@ -1,0 +1,200 @@
+{
+  "name": "shader-factory",
+  "displayName": "Shader Factory",
+  "description": "Development tools for webgl shader",
+  "version": "1.0.0",
+  "publisher": "chenng",
+  "license": "MIT",
+  "repository": {
+    "url": ""
+  },
+  "engines": {
+    "vscode": "^1.40.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "scripts": {
+    "vscode:prepublish": "webpack --mode production",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "dev": "webpack --mode development --watch",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/run_tests.js",
+    "deploy": "vsce publish"
+  },
+  "activationEvents": [
+    "onCommand:shader-factory.showGlslPreview",
+    "onCommand:shader-factory.showStaticGlslPreview",
+    "onCommand:shader-factory.createHTML"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "properties": {
+        "shader-factory.forceAspectRatio": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "default": [
+            9,
+            16
+          ],
+          "description": "Force the rendering into a specific aspect ratio. Set either to zero or negative to ignore."
+        },
+        "shader-factory.showCompileErrorsAsDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show all compile errors directly in the editor as diagnostics."
+        },
+        "shader-factory.omitDeprecationWarnings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Omit warnings when using a deprecated feature, replacing those with a single warning on activating the extension. Be careful with this setting, as shaders might break unpredictably in future updates."
+        },
+        "shader-factory.enableGlslifySupport": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable support for glslify, which will transform shader code after all transformations this extension does. Line numbers for errors are currently disable when this option is enabled."
+        },
+        "shader-factory.reloadAutomatically": {
+          "type": "boolean",
+          "default": true,
+          "description": "Master switch for all automatic reloads."
+        },
+        "shader-factory.reloadOnEditText": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reload OpenGL viewport when the opened file contents are changed."
+        },
+        "shader-factory.reloadOnEditTextDelay": {
+          "type": "number",
+          "default": 1,
+          "description": "Delay in seconds between an edit of the opened file and the reload of OpenGL viewport."
+        },
+        "shader-factory.reloadOnChangeEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reload OpenGL viewport when editor changes."
+        },
+        "shader-factory.resetStateOnChangeEditor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reset state of time, mouse and keyboard when reloading OpenGL viewport through an editor change."
+        },
+        "shader-factory.showScreenshotButton": {
+          "type": "boolean",
+          "default": false,
+          "description": "Shows a screenshot button in the OpenGL viewport which allows to save the current frame as a png file."
+        },
+        "shader-factory.screenshotResolution": {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "default": [
+            0,
+            0
+          ],
+          "description": "Manually set the resolution of a screenshot. Set either to zero or negative to use the viewports resolution."
+        },
+        "shader-factory.showPauseButton": {
+          "type": "boolean",
+          "default": true,
+          "description": "Shows a pause button in the OpenGL viewport which allows to pause the rendering."
+        },
+        "shader-factory.pauseWholeRender": {
+          "type": "boolean",
+          "default": true,
+          "description": "Determines whether pausing will pause only time thus still render and allow input, or pause everything."
+        },
+        "shader-factory.printShaderFrameTime": {
+          "type": "boolean",
+          "default": true,
+          "description": "Display shader frame time graph in corner of display."
+        },
+        "shader-factory.warnOnUndefinedTextures": {
+          "type": "boolean",
+          "default": true,
+          "description": "If enabled the user is warned when a channel is used in code but there is no definition for said channel, likely resulting in a bug in the shader."
+        },
+        "shader-factory.enabledAudioInput": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow using media files as inputs in shaders. Note that the feature is experimental and should be used with caution."
+        },
+        "shader-factory.audioDomainSize": {
+          "type": "number",
+          "default": 512,
+          "description": "Size of the domain used for four transformation when using audio as an input."
+        },
+        "shader-factory.shaderToyStrictCompatibility": {
+          "type": "boolean",
+          "default": false,
+          "description": "This setting will assume your shaders follow the standards set on the online version of ShaderToy, e.g. you have a mainImage function defined. Use this if you have issues with shaders from shadertoy.com in the VSCode extension, but not if you regularly use shaders defining a regular main function."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "shader-factory.showGlslPreview",
+        "title": "Shader Factory: Show Shader Preview"
+      },
+      {
+        "command": "shader-factory.createHTML",
+        "title": "Shader Factory: Create HTML"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "shader-factory.showGlslPreview",
+          "group": "ShaderToy-Core"
+        },
+        {
+          "command": "shader-factory.createHTML",
+          "group": "ShaderToy"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "@types/glob": "^7.1.1",
+    "compare-versions": "^3.6.0",
+    "glob": "^7.1.6",
+    "glslify": "^7.0.0",
+    "mime": "^2.4.5"
+  },
+  "devDependencies": {
+    "@types/compare-versions": "^3.3.0",
+    "@types/mime": "^2.0.2",
+    "@types/mocha": "^2.2.42",
+    "@types/node": "^10.17.21",
+    "@types/vscode": "^1.40.0",
+    "@typescript-eslint/eslint-plugin": "^4.14.2",
+    "eslint": "^7.19.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-airbnb-typescript": "^12.0.0",
+    "eslint-plugin-import": "^2.22.1",
+    "mocha": "^7.2.0",
+    "ts-loader": "^6.2.2",
+    "tslint": "^5.20.1",
+    "typescript": "^3.9.2",
+    "vsce": "^1.81.1",
+    "vscode-test": "^1.4.0",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11"
+  },
+  "icon": "resources/logo.png"
+}
