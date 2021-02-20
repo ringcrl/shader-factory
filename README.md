@@ -19,7 +19,7 @@ VSCode Extension 搜索 `Shader factory`
 - `Shader Factory: Show Shader Preview`，直接实时预览 
 - `Shader Factory: Create HTML`，导出 HTML
 
-![01.png](https://cdn-1257430323.cos.ap-guangzhou.myqcloud.com/assets/imgs/20210220104550_bb5040dff1db282716e0f5ea1e3f271d.png)
+![01.png](./images/01.png)
 
 ## 开发
 
