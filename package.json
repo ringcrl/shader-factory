@@ -2,7 +2,7 @@
   "name": "shader-factory",
   "displayName": "Shader Factory",
   "description": "Development tools for webgl shader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "chenng",
   "license": "MIT",
   "repository": {
