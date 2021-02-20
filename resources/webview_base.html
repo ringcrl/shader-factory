@@ -51,8 +51,9 @@
 
     #dat_gui_container {
       position: absolute;
-      left: 0px;
-      top: 0px;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 45%;
       z-index: 3;
     }
 
@@ -93,6 +94,17 @@
 <canvas id="canvas"></canvas>
 
 <!-- Shaders -->
+
+<script id="vertexShader" type="x-shader">
+attribute vec2 aVertexPosition;
+varying vec2 vTextureCoord;
+
+void main(void) {
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  vTextureCoord = uv;
+}
+
+</script>
 
 <script type="text/javascript">
   let vscode = undefined;
@@ -308,16 +320,17 @@
     // Audio Update
 
     for (let buffer of buffers) {
-      buffer.Shader.uniforms['iResolution'].value = resolution;
-      buffer.Shader.uniforms['iTimeDelta'].value = deltaTime;
       buffer.Shader.uniforms['iTime'].value = time;
-      buffer.Shader.uniforms['iFrame'].value = frameCounter;
-      buffer.Shader.uniforms['iMouse'].value = mouse;
-      buffer.Shader.uniforms['iMouseButton'].value = mouseButton;
-
-      buffer.Shader.uniforms['resolution'].value = resolution;
-      buffer.Shader.uniforms['time'].value = time;
-      buffer.Shader.uniforms['mouse'].value = normalizedMouse;
+      buffer.Shader.uniforms['iResolution'].value = resolution;
+      
+      
+      // buffer.Shader.uniforms['resolution'].value = resolution;
+      // buffer.Shader.uniforms['time'].value = time;
+      // buffer.Shader.uniforms['iTimeDelta'].value = deltaTime;
+      // buffer.Shader.uniforms['iFrame'].value = frameCounter;
+      // buffer.Shader.uniforms['mouse'].value = normalizedMouse;
+      // buffer.Shader.uniforms['iMouse'].value = mouse;
+      // buffer.Shader.uniforms['iMouseButton'].value = mouseButton;
 
       quad.material = buffer.Shader;
       renderer.setRenderTarget(buffer.Target);
@@ -364,7 +377,7 @@
     };
 
     // Compute forced aspect ratio and align canvas
-    resolution = forceAspectRatio(window.innerWidth, window.innerHeight * 0.8);
+    resolution = forceAspectRatio(window.innerWidth, window.innerHeight * 0.4);
     canvas.style.left = `${(window.innerWidth - resolution.x) / 2}px`;
     //   canvas.style.top = `${(window.innerHeight - resolution.y) / 2}px`;
     canvas.style.top = `30px`;
@@ -493,5 +506,27 @@
     computeSize();
   });
 
-  // Keyboard Callbacks
+  const exportBtn = document.querySelector('#export-glsl');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      const fragmentFrames = document.querySelectorAll('script[type="x-shader/x-fragment"]');
+      const totalFrameContent = fragmentFrames[fragmentFrames.length - 1].innerHTML;
+      copyToClip(totalFrameContent);
+      exportBtn.innerHTML = '已复制到剪切板';
+      setTimeout(() => {
+        exportBtn.innerHTML = '点击导出';
+      }, 2000)
+    });
+  }
+
+
+  function copyToClip(content) {
+    const input = document.createElement('textarea');
+    input.value = content;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('Copy');
+    document.body.removeChild(input);
+  }
+
 </script>

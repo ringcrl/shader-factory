@@ -2,16 +2,18 @@
 precision mediump float;
 #endif
 
+#iUniform float u_vertical = 0.0 in { -1.0, 1.0 } step 1.0 // 1.0 下移动，0.0 不移动，-1.0 上移动
+#iUniform float u_horizontal = 0.0 in { -1.0, 1.0 } step 1.0 // 1.0 左移动，0.0 不移动，-1.0 右移动
+#iUniform float progress = 0.0 in { 0.0, 1.0 } step 0.001
+
 #iChannel0 "file://assets/vertical.jpg"
 #iChannel1 "file://assets/vertical2.jpg"
 
 #include "common/bezierEffect.glsl"
-#include "common/getProgress.glsl"
-
-vec2 direction = vec2(1.0, 0.0);
 
 void main() {
-  float progress = getProgress(iTime, 2.0);
+  vec2 direction = vec2(u_horizontal, u_vertical);
+
   vec2 uv = gl_FragCoord.xy / iResolution.xy;
 
   float time = easeInOutQuint(progress);

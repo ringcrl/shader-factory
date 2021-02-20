@@ -5,12 +5,16 @@ precision mediump float;
 #include "common/directionBlur.glsl"
 #include "common/getProgress.glsl"
 
+#iUniform float progress = 0.0 in { 0.0, 1.0 } step 0.01
+
+varying vec2 vTextureCoord;
+
 #iChannel0 "file://assets/vertical.jpg"
 
 void main() {
-  float progress = getProgress(iTime, 1.0);
+  // float progress = getProgress(iTime, 1.0);
 
-  vec2 uv = gl_FragCoord.xy / iResolution.xy;
+  vec2 uv = vTextureCoord;
 
   float blurStep = (1.0 - progress) * 3.0;
 
