@@ -8,7 +8,7 @@
 #iChannel2 "file://01-基础/imgs/iChannel2.png"
 
 // 通过更改数字来更换教程
-#define TUTORIAL 13
+#define TUTORIAL 14
 
 /* 教程列表
  1 空白的屏幕
@@ -23,7 +23,7 @@
 10 将坐标中心移动到帧画面的中心
 11 坐标系宽高比标准化
 12 圆盘
-13 函数
+13 多个函数
 14 内置函数：STEP
 15 内置函数：CLAMP
 16 内置函数：SMOOTHSTEP
@@ -374,36 +374,28 @@ void main() {
   gl_FragColor = vec4(pixel, 1.0);
 }
 
-// Note how the latest disk is shown and previous ones are left behind it.
-// It is because the last if condition changes the pixel value at the end.
-// If the coordinates of pixel fits multiple if conditions, the last manipulation will remain and fragColor is set to that one.
+// 请注意如何显示最新的圆盘，而之前的圆盘则留在后面
+// 这是因为最后一个if条件最终改变了像素值
+// 如果像素的坐标适合多个if条件，则最后的操作将保留，并将gl_FragColor设置为该条件
 
 #elif TUTORIAL == 13
-// FUNCTIONS
-//
-// Functions are great for code reuse. Let's put the code for disks
-// into a function and use the function for drawing.
-// There are so many different ways of writing a function to draw a shape.
-//
-// Here we have a void function that does not return anything. Instead,
-// "pixel" is taken as an "inout" expression. "inout" is a unique
-// keyword of GLSL.
-// By default all arguments are "in" arguments. Which
-// means, the value of the variable is given to the function scope
-// from the scope the function is called.
-// An "out" variable gives the value of the variable from the function
-// to the scope in which the function is called.
-// An "inout" argument does both. First the value of the variable is
-// sent to the function as its argument. Then, that variable is
-// processed inside the function. When the function ends, the value
-// of the variable is updated where the function is called.
-//
-// Here, the "pixel" variable that is initialized with the background
-// color in the "main" function. Then, "pixel" is given to the "disk"
-// function. When the if condition is satisfied the value of the "pixel"
-// is changed with the "color" argument. If it is not satified, the
-// "pixel" is left untouched and keeps it previous value (which was the
-// "bgColor".
+// 多个函数
+
+// 函数非常适合代码重用。让我们将圆盘代码放入函数中，并使用该函数进行绘图
+
+// 我们将像素作为输入, "inout"是GLSL的特殊关键字
+// 默认情况下，所有参数均为 "in" 参数
+// 这意味着，变量的值从调用函数的作用域中提供给函数作用域
+// "输出"变量将变量的值从函数传递到调用函数的作用域
+
+// "inout"变量将变量的值作为参数发送给函数，然后，在函数内部处理该变量
+// 函数结束时，将在调用函数的位置更新变量的值
+// 也就是说带有 input 标识符的变量可以在函数内被修改
+
+// 使用 main 函数的背景色初始化的"像素"变量
+// 然后 pixel 传递给 dist 函数
+// 如果满足if条件，则使用"color"参数更改"pixel"的值
+// 如果不满足条件，则不更改 pixel，并使其保持先前的值（即 "bgColor"）
 void disk(vec2 r, vec2 center, float radius, vec3 color, inout vec3 pixel) {
   if (length(r - center) < radius) {
     pixel = color;
@@ -414,87 +406,77 @@ void main() {
   vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
 
   vec3 bgCol = vec3(0.3);
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
+  vec3 red = vec3(1.00, 0.329, 0.298);
+  vec3 yellow = vec3(0.867, 0.910, 0.247);
+  vec3 blue = vec3(0.216, 0.471, 0.698);
 
   vec3 pixel = bgCol;
 
-  disk(r, vec2(0.1, 0.3), 0.5, col3, pixel);
-  disk(r, vec2(-0.8, -0.6), 1.5, col1, pixel);
-  disk(r, vec2(0.8, 0.0), .15, col2, pixel);
+  disk(r, vec2(0.1, 0.3), 0.3, red, pixel);
+  disk(r, vec2(0.0, 0.0), .15, yellow, pixel);
+  disk(r, vec2(-0.8, -0.6), 0.4, blue, pixel);
 
   gl_FragColor = vec4(pixel, 1.0);
 }
-// As you see, the borders of the disks have "jagged" curves, where
-// individual pixels can be seen. This is called "aliasing". It occurs
-// because pixels have finite size and we want to draw a continuous
-// shape on a discontinuous grid.
-// There is a method to reduce the aliasing. It is done by mixing the
-// inside color and outside colors at the border. To achieve this
-// we have to learn some built-in functions.
 
-// And, again, note the order of disk function calls and how they are
-// drawn on top of each other. Each disk function manipulates
-// the pixel variable. If a pixel is manipulated by multiple disk
-// functions, the value of the last one is sent to fragColor.
+// 如您所见，圆盘的边界具有“锯齿状”曲线，可以看到单个像素
+// 这称为“锯齿”。发生这种情况是因为像素的大小有限，我们希望在不连续的网格上绘制连续的形状
+// 有一种减少混叠的方法，通过在边框处混合内部颜色和外部颜色来完成此操作
+// 为此，我们必须学习一些内置函数
 
-// In this case, the previous values are completely overwritten.
-// The final value only depends to the last function that manipulated
-// the pixel. There are no mixtures between layers.
+// 请注意圆盘函数调用的顺序以及它们如何相互绘制
+// 每个圆盘函数都会操纵pixel变量
+// 如果一个 pixel 由多个圆盘函数操纵，则最后一个像素的值将发送到 gl_FragColor
+
+// 在这种情况下，先前的值将被完全覆盖
+// 最终值仅取决于操纵像素的最后一个函数，层之间没有混合物
 
 #elif TUTORIAL == 14
-// BUILT-IN FUNCTIONS: STEP
+// 内置函数：STEP
 //
-// "step" function is the Heaviside step function :-)
-// http://en.wikipedia.org/wiki/Heaviside_step_function
+// "step" 函数：http://en.wikipedia.org/wiki/Heaviside_step_function
 //
 // f(x0, x) = {1 x>x0,
 //            {0 x<x0
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
-  float xMax = iResolution.x / iResolution.y;
+void main() {
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+  float aspectRatio = iResolution.x / iResolution.y;
 
-  vec3 bgCol = vec3(0.0);                 // black
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
+  vec3 bgCol = vec3(0.0);
 
   vec3 pixel = bgCol;
 
   float edge, variable, ret;
 
-  // divide the screen into five parts horizontally
-  // for different examples
-  if (r.x < -0.6 * xMax) {  // Part I
+  // 将屏幕水平分为五个部分，以用于不同的示例
+	// [-1.0, -0.6)、[-0.6, -0.2)、[-0.2, 0.2), [0.2, 0.6)、[0.6, 1.0]
+
+  if (r.x < -0.6 * aspectRatio) { // Part I
     variable = r.y;
-    edge = 0.2;
-    if (variable > edge) {  // if the "variable" is greater than "edge"
-      ret = 1.0;            // return 1.0
-    } else {                // if the "variable" is less than "edge"
-      ret = 0.0;            // return 0.0
+    edge = 0.2; // 相对于 [-1.0, 1.0]
+    if (variable > edge) {  // 如果 r.y 大于 edge 显示白色
+      ret = 1.0;
+    } else {                // 如果 r.y 小于 edge 显示白色
+      ret = 0.0;
     }
-  } else if (r.x < -0.2 * xMax) {  // Part II
+  } else if (r.x < -0.2 * aspectRatio) { // Part II
     variable = r.y;
     edge = -0.2;
-    ret = step(edge, variable);   // step function is equivalent to the
-                                  // if block of the Part I
-  } else if (r.x < 0.2 * xMax) {  // Part III
-    // "step" returns either 0.0 or 1.0.
-    // "1.0 - step" will inverse the output
-    ret = 1.0 - step(0.5, r.y);   // Mirror the step function around edge
-  } else if (r.x < 0.6 * xMax) {  // Part IV
-    // if y-coordinate is smaller than -0.4 ret is 0.3
-    // if y-coordinate is greater than -0.4 ret is 0.3+0.5=0.8
+    ret = step(edge, variable);   // step function 等同于第一部分的 if 语句
+  } else if (r.x < 0.2 * aspectRatio) { // Part III
+    // "step" 返回 0.0 或者 1.0，"1.0 - step" 会反转输出
+    ret = 1.0 - step(0.5, r.y);   // 反转 0.0 或 1.0 的输出
+  } else if (r.x < 0.6 * aspectRatio) { // Part IV
+    // 如果y坐标小于-0.4，则ret为0.3
+    // 如果y坐标大于-0.4，则ret为0.3 + 0.5 = 0.8
     ret = 0.3 + 0.5 * step(-0.4, r.y);
-  } else {  // Part V
-    // Combine two step functions to create a gap
-    ret = step(-0.3, r.y) * (1.0 - step(0.2, r.y));
-    // "1.0 - ret" will create a gap
+  } else { // Part V
+    // 结合两个 step 函数，创造间隙
+    ret = step(-0.3, r.y) * (1.0 - step(0.3, r.y)); // https://thebookofshaders.com/glossary/?search=step
   }
 
-  pixel = vec3(ret);  // make a color out of return value.
-  fragColor = vec4(pixel, 1.0);
+  pixel = vec3(ret);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 15
