@@ -8,7 +8,7 @@
 #iChannel2 "file://01-基础/imgs/iChannel2.png"
 
 // 通过更改数字来更换教程
-#define TUTORIAL 14
+#define TUTORIAL 15
 
 /* 教程列表
  1 空白的屏幕
@@ -480,33 +480,28 @@ void main() {
 }
 
 #elif TUTORIAL == 15
-// BUILT-IN FUNCTIONS: CLAMP
+// 内置函数：CLAMP
 //
-// "clamp" function saturates the input below and above the thresholds
+// "clamp（夹紧）" 方法设置输入、最小值、最大值
 // f(x, min, max) = { max x>max
 //                  { x   max>x>min
 //                  { min min>x
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  // use [0,1] coordinate system for this example
+void main() {
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  // 该例子使用 [0,1] 坐标系统
 
-  vec3 bgCol = vec3(0.0);                 // black
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
+  vec3 bgCol = vec3(0.0); // black
 
   vec3 pixel = bgCol;
 
   float edge, variable, ret;
 
-  // divide the screen into four parts horizontally for different
-  // examples
-  if (p.x < 0.25) {        // Part I
-    ret = p.y;             // the brightness value is assigned the y coordinate
-                           // it'll create a gradient
-  } else if (p.x < 0.5) {  // Part II
-    float minVal = 0.3;    // implementation of clamp
+  // 将屏幕水平分为四个部分，以用于不同的示例
+  if (p.x < 0.25) { // Part I
+    ret = p.y;             // 为亮度值分配y坐标，它将创建一个渐变
+  } else if (p.x < 0.5) { // Part II
+    float minVal = 0.3;    // clamp 方法的实现
     float maxVal = 0.6;
     float variable = p.y;
     if (variable < minVal) {
@@ -518,20 +513,19 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     if (variable > maxVal) {
       ret = maxVal;
     }
-  } else if (p.x < 0.75) {  // Part III
+  } else if (p.x < 0.75) { // Part III
     float minVal = 0.6;
     float maxVal = 0.8;
     float variable = p.y;
     ret = clamp(variable, minVal, maxVal);
   } else {                            // Part IV
-    float y = cos(5. * TWOPI * p.y);  // oscillate between +1 and -1
-                                      // 5 times, vertically
-    y = (y + 1.0) * 0.5;              // map [-1,1] to [0,1]
+    float y = cos(5. * TWOPI * p.y);  // 在+1和-1之间振荡5次，将[-1,1]垂直映射到[0,1]
+    y = (y + 1.0) * 0.5;
     ret = clamp(y, 0.2, 0.8);
   }
 
-  pixel = vec3(ret);  // make a color out of return value.
-  fragColor = vec4(pixel, 1.0);
+  pixel = vec3(ret);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 16
