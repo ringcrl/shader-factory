@@ -8,7 +8,7 @@
 #iChannel2 "file://01-基础/imgs/iChannel2.png"
 
 // 通过更改数字来更换教程
-#define TUTORIAL 15
+#define TUTORIAL 0
 
 /* 教程列表
  1 空白的屏幕
@@ -30,21 +30,122 @@
 17 内置函数：MIX
 18 使用 SMOOTHSTEP 抗锯齿
 19 函数示意图
-20 颜色加减
+20 颜色叠加
 21 坐标转换：旋转
 22 坐标转换：缩放
 23 连续坐标转换
 24 时间、动作和动画
 25 等离子效果
 26 纹理
-27 鼠标输入
-28 随机
+27 随机
 */
 
 #define PI 3.14159265359
 #define TWOPI 6.28318530718
 
-#if TUTORIAL == 1
+#if TUTORIAL == 0
+
+float square(vec2 r, vec2 bottomLeft, float side) {
+  vec2 p = r - bottomLeft;
+  return (p.x > 0.0 && p.x < side && p.y > 0.0 && p.y < side) ? 1.0 : 0.0;
+}
+
+float character(vec2 r, vec2 bottomLeft, float charCode, float squareSide) {
+  vec2 p = r - bottomLeft;
+  float ret = 0.0;
+  float num, quotient, remainder, divider;
+  float x, y;
+  num = charCode;
+  for (int i = 0; i < 20; i++) {
+    float boxNo = float(19 - i);
+    divider = pow(2., boxNo);
+    quotient = floor(num / divider);
+    remainder = num - quotient * divider;
+    num = remainder;
+
+    y = floor(boxNo / 4.0);
+    x = boxNo - y * 4.0;
+    if (quotient == 1.) {
+      ret += square(p, squareSide * vec2(x, y), squareSide);
+    }
+  }
+  return ret;
+}
+
+mat2 rot(float th) { return mat2(cos(th), -sin(th), sin(th), cos(th)); }
+
+void main() {
+  float G = 990623.;  // compressed characters :-)
+  float L = 69919.;
+  float S = 991119.;
+
+  float t = iTime;
+
+  vec2 r = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+  // vec2 rL = rot(t)*r+0.0001*t;
+  // vec2 rL = r+vec2(cos(t*0.02),sin(t*0.02))*t*0.05;
+  float c = 0.05;  //+0.03*sin(2.5*t);
+  vec2 pL = (mod(r + vec2(cos(0.3 * t), sin(0.3 * t)), 2.0 * c) - c) / c;
+  float circ = 1.0 - smoothstep(0.75, 0.8, length(pL));
+  vec2 rG = rot(2. * 3.1415 * smoothstep(0., 1., mod(1.5 * t, 4.0))) * r;
+  vec2 rStripes = rot(0.2) * r;
+
+  float xMax = 0.5 * iResolution.x / iResolution.y;
+  float letterWidth = 2.0 * xMax * 0.9 / 4.0;
+  float side = letterWidth / 4.;
+  float space = 2.0 * xMax * 0.1 / 5.0;
+
+  r += 0.001;  // to get rid off the y=0 horizontal blue line.
+  float maskGS = character(
+      r,
+      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 0.0,
+      G, side);
+  float maskG = character(
+      rG,
+      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 0.0,
+      G, side);
+  float maskL1 = character(
+      r,
+      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 1.0,
+      L, side);
+  float maskSS = character(
+      r,
+      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 2.0,
+      S, side);
+  float maskS = character(r,
+                          vec2(-xMax + space, -2.5 * side) +
+                              vec2(letterWidth + space, 0.0) * 2.0 +
+                              vec2(0.01 * sin(2.1 * t), 0.012 * cos(t)),
+                          S, side);
+  float maskL2 = character(
+      r,
+      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 3.0,
+      L, side);
+  float maskStripes = step(0.25, mod(rStripes.x - 0.5 * t, 0.5));
+
+  float i255 = 0.00392156862;
+  vec3 blue = vec3(43., 172., 181.) * i255;
+  vec3 pink = vec3(232., 77., 91.) * i255;
+  vec3 dark = vec3(59., 59., 59.) * i255;
+  vec3 light = vec3(245., 236., 217.) * i255;
+  vec3 green = vec3(180., 204., 18.) * i255;
+
+  vec3 pixel = blue;
+  pixel = mix(pixel, light, maskGS);
+  pixel = mix(pixel, light, maskSS);
+  pixel -= 0.1 * maskStripes;
+  pixel = mix(pixel, green, maskG);
+  pixel = mix(pixel, pink, maskL1 * circ);
+  pixel = mix(pixel, green, maskS);
+  pixel = mix(pixel, pink, maskL2 * (1. - circ));
+
+  float dirt = pow(texture(iChannel0, 4.0 * r).x, 4.0);
+  pixel -= (0.2 * dirt - 0.1) * (maskG + maskS);  // dirt
+  pixel -= smoothstep(0.45, 2.5, length(r));
+  gl_FragColor = vec4(pixel, 1.0);
+}
+
+#elif TUTORIAL == 1
 // 空白的屏幕
 
 // "main" 函数每秒会调用60次，来应用 shader 的效果
@@ -529,142 +630,124 @@ void main() {
 }
 
 #elif TUTORIAL == 16
-// BUILT-IN FUNCTIONS: SMOOTHSTEP
+// 内置函数：SMOOTHSTEP
 //
-// "smoothstep" function is like step function but instead of a
-// sudden jump from 0 to 1 at the edge, it makes a smooth transition
-// in a given interval
+// "smoothstep" 方法类似于 step 方法， 但不是从在边界处从0跳到1
+// 在给定的间隔内进行平滑过渡
 // http://en.wikipedia.org/wiki/Smoothstep
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  // use [0,1] coordinate system for this example
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
 
-  vec3 bgCol = vec3(0.0);                 // black
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // red
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // yellow
+  vec3 bgCol = vec3(0.0); // black
 
   vec3 pixel = bgCol;
 
   float edge, variable, ret;
 
-  // divide the screen into four parts horizontally for different
-  // examples
-  if (p.x < 1. / 5.) {  // Part I
-    float edge = 0.5;
-    ret = step(edge, p.y);     // simple step function
-  } else if (p.x < 2. / 5.) {  // Part II
-    // linearstep (not a builtin function)
-    float edge0 = 0.45;
-    float edge1 = 0.55;
+  // 将屏幕水平分为四个部分，以用于不同的示例
+  if (p.x < 0.2) { // Part I
+    float edge = 0.3;
+    ret = step(edge, p.y); // 简单的 step 方法
+  } else if (p.x < 0.4) { // Part II
+    // linearstep (非内置方法)
+    float edge0 = 0.3;
+    float edge1 = 0.6;
+    // 当 p.y == edge0 => t = 0.0
+    // 当 p.y == edge1 => t = 1.0
+    // 因此，在edge0和edge1之间，t在0.0和1.0之间具有线性过渡
     float t = (p.y - edge0) / (edge1 - edge0);
-    // when p.y == edge0 => t = 0.0
-    // when p.y == edge1 => t = 1.0
-    // RHS is a linear function of y
-    // so, between edge0 and edge1, t has a linear transition
-    // between 0.0 and 1.0
+
+    // 当t < edge0 时 t 将具有负值，而当 t> edge1 时 t 将具有大于 1.0 的值
+    // 但我们希望它限制在0.0到1.0之间，所以使用 clamp 方法
     float t1 = clamp(t, 0.0, 1.0);
-    // t will have negative values when t<edge0 and
-    // t will have greater than 1.0 values when t>edge1
-    // but we want it be constraint between 0.0 and 1.0
-    // so, clamp it!
+
     ret = t1;
-  } else if (p.x < 3. / 5.) {  // Part III
-    // implementation of smoothstep
-    float edge0 = 0.45;
-    float edge1 = 0.55;
+  } else if (p.x < 0.6) { // Part III
+    // 实现 smoothstep
+    float edge0 = 0.3;
+    float edge1 = 0.6;
     float t = clamp((p.y - edge0) / (edge1 - edge0), 0.0, 1.0);
     float t1 = 3.0 * t * t - 2.0 * t * t * t;
-    // previous interpolation was linear. Visually it does not
-    // give an appealing, smooth transition.
-    // To achieve smoothness, implement a cubic Hermite polynomial
-    // 3*t^2 - 2*t^3
+    // 上一个插值是线性的。从视觉上看，它不会带来平滑过渡
+    // 为了实现平滑，使用公式：3*t^2 - 2*t^3
     ret = t1;
-  } else if (p.x < 4. / 5.) {  // Part IV
-    ret = smoothstep(0.45, 0.55, p.y);
-  } else if (p.x < 5. / 5.) {  // Part V
-    // smootherstep, a suggestion by Ken Perlin
-    float edge0 = 0.45;
-    float edge1 = 0.55;
+  } else if (p.x < 0.8) { // Part IV
+    ret = smoothstep(0.3, 0.6, p.y);
+  } else if (p.x < 1.0) {  // Part V
+    // smootherstep, 更平滑的国度
+    float edge0 = 0.3;
+    float edge1 = 0.6;
     float t = clamp((p.y - edge0) / (edge1 - edge0), 0.0, 1.0);
     // 6*t^5 - 15*t^4 + 10*t^3
     float t1 = t * t * t * (t * (t * 6. - 15.) + 10.);
     ret = t1;
-    // faster transition and still smoother
-    // but computationally more involved.
+    // 过渡更快，更平滑，但计算量更大
   }
 
-  pixel = vec3(ret);  // make a color out of return value.
-  fragColor = vec4(pixel, 1.0);
+  pixel = vec3(ret);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 17
-// BUILT-IN FUNCTIONS: MIX
-//
-// A shader can be created by first constructing individual parts
-// and composing them together.
-// There are different ways of how to combine different parts.
-// In the previous disk example, different disks were drawn on top
-// of each other. There was no mixture of layers. When disks
-// overlap, only the last one is visible.
-//
-// Let's learn mixing different data types (in this case vec3's
-// representing colors
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
+// 内置方法：MIX
+
+// 可以通过首先构建各个部分并将它们组合在一起来创建着色器
+// 如何组合不同部分有不同的方法
+// 在前面的圆盘示例中，不同的圆盘相互绘制
+// 没有层的混合，当磁盘重叠时，只有最后一个可见
+
+// 下面学习混合不同的颜色（在这种情况下，vec3代表颜色）
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
 
   vec3 bgCol = vec3(0.3);
   vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
   vec3 col2 = vec3(1.00, 0.329, 0.298);   // red
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // yellow
 
   vec3 ret;
 
-  // divide the screen into four parts horizontally for different
-  // examples
-  if (p.x < 1. / 5.) {  // Part I
-    // implementation of mix
-    float x0 = 0.2;  // first item to be mixed
-    float x1 = 0.7;  // second item to be mixed
-    float m = 0.1;   // amount of mix (between 0.0 and 1.0)
-    // play with this number
-    // m = 0.0 means the output is fully x0
-    // m = 1.0 means the output is fully x1
-    // 0.0 < m < 1.0 is a linear mixture of x0 and x1
+  // 分成5部分做演示
+  if (p.x < 0.2) { // Part I
+    // 实现mix
+    float x0 = 0.1;  // 要混合的第一项
+    float x1 = 1.0;  // 第二项要混合
+    float m = 0.1;   // 混合量（0.0到1.0之间）
+    // m = 0.0表示输出完全为x0
+    // m = 1.0表示输出为完全x1
+    // 0.0 <m <1.0是x0和x1的线性混合
     float val = x0 * (1.0 - m) + x1 * m;
     ret = vec3(val);
-  } else if (p.x < 2. / 5.) {  // Part II
-    // try all possible mix values
-    float x0 = 0.2;
-    float x1 = 0.7;
+  } else if (p.x < 0.4) { // Part II
+    // 尝试所有可能的混合值
+    float x0 = 0.1;
+    float x1 = 1.0;
     float m = p.y;
     float val = x0 * (1.0 - m) + x1 * m;
     ret = vec3(val);
-  } else if (p.x < 3. / 5.) {  // Part III
-    // use the mix function
-    float x0 = 0.2;
-    float x1 = 0.7;
+  } else if (p.x < 0.6) { // Part III
+    // 使用mix函数
+    float x0 = 0.1;
+    float x1 = 1.0;
     float m = p.y;
     float val = mix(x0, x1, m);
     ret = vec3(val);
-  } else if (p.x < 4. / 5.) {  // Part IV
-    // mix colors instead of numbers
+  } else if (p.x < 0.8) { // Part IV
+    // 混合颜色而不是数字
     float m = p.y;
     ret = mix(col1, col2, m);
-  } else if (p.x < 5. / 5.) {  // Part V
-    // combine smoothstep and mix for color transition
-    float m = smoothstep(0.5, 0.6, p.y);
+  } else if (p.x < 5. / 5.) { // Part V
+    // 使用 smoothstep 和 mix 来做颜色转换
+    float m = smoothstep(0.45, 0.55, p.y);
     ret = mix(col1, col2, m);
   }
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 18
-// ANTI-ALIASING WITH SMOOTHSTEP
-//
+// 使用 SMOOTHSTEP 抗锯齿
+
 float linearstep(float edge0, float edge1, float x) {
   float t = (x - edge0) / (edge1 - edge0);
   return clamp(t, 0.0, 1.0);
@@ -675,9 +758,10 @@ float smootherstep(float edge0, float edge1, float x) {
   return clamp(t1, 0.0, 1.0);
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
-  float xMax = iResolution.x / iResolution.y;
+void main() {
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+
+  float aspectRatio = iResolution.x / iResolution.y;
 
   vec3 bgCol = vec3(0.3);
   vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
@@ -687,57 +771,44 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 pixel = bgCol;
   float m;
 
-  float radius = 0.4;       // increase this to see the effect better
-  if (r.x < -0.5 * xMax) {  // Part I
-    // no interpolation, yes aliasing
-    m = step(radius, length(r - vec2(-0.5 * xMax - 0.4, 0.0)));
-    // if the distance from the center is smaller than radius,
-    // then mix value is 0.0
-    // otherwise the mix value is 1.0
+  float radius = 0.4; // 增加半径可以看到更好的效果
+
+  // 横向分成四部分
+  if (r.x < -0.5 * aspectRatio) { // Part I
+    // 不插值，存在锯齿
+    float len = length(r - vec2(-0.5 * aspectRatio - 0.4, 0.0));
+    m = step(radius, len);
+    // 如果到中心的距离小于半径，则混合值为0.0，否则混合值为1.0
     pixel = mix(col1, bgCol, m);
-  } else if (r.x < -0.0 * xMax) {  // Part II
-    // linearstep (first order, linear interpolation)
-    m = linearstep(radius - 0.005, radius + 0.005,
-                   length(r - vec2(-0.0 * xMax - 0.4, 0.0)));
-    // mix value is linearly interpolated when the distance to the center
-    // is 0.005 smaller and greater than the radius.
+  } else if (r.x < -0.0 * aspectRatio) { // Part II
+    // linearstep（一阶，线性插值）
+    float len = length(r - vec2(-0.0 * aspectRatio - 0.4, 0.0));
+    m = linearstep(radius - 0.005, radius + 0.005, len);
+    // 当到中心的距离小于和大于半径0.005时，线性混合插值值
     pixel = mix(col1, bgCol, m);
-  } else if (r.x < 0.5 * xMax) {  // Part III
-    // smoothstep (cubical interpolation)
-    m = smoothstep(radius - 0.005, radius + 0.005,
-                   length(r - vec2(0.5 * xMax - 0.4, 0.0)));
+  } else if (r.x < 0.5 * aspectRatio) { // Part III
+    // smoothstep（三次插值）
+    float len = length(r - vec2(0.5 * aspectRatio - 0.4, 0.0));
+    m = smoothstep(radius - 0.005, radius + 0.005, len);
     pixel = mix(col1, bgCol, m);
-  } else if (r.x < 1.0 * xMax) {  // Part IV
-    // smootherstep (sixth order interpolation)
-    m = smootherstep(radius - 0.005, radius + 0.005,
-                     length(r - vec2(1.0 * xMax - 0.4, 0.0)));
+  } else if (r.x < 1.0 * aspectRatio) {  // Part IV
+    // smootherstep (六阶插值)
+    float len = length(r - vec2(1.0 * aspectRatio - 0.4, 0.0));
+    m = smootherstep(radius - 0.005, radius + 0.005, len);
     pixel = mix(col1, bgCol, m);
   }
 
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 19
-// FUNCTION PLOTTING
-//
-// It is always useful to see the plots of functions on cartesian
-// coordinate system, to understand what they are doing precisely
-//
-// Let's plot some 1D functions!
-//
-// If y value is a function f of x value, the expression of their
-// relation is: y = f(x)
-// in other words, the plot of a function is all points
-// that satisfy the expression: y-f(x)=0
-// this set has 0 thickness, and can't be seen.
-// Instead use the set of (x,y) that satisfy: -d < y-f(x) < d
-// in other words abs(y-f(x)) < d
-// where d is the thickness. (the thickness in in y direction)
-// Because of the properties of absolute function, the condition
-// abs(y-f(x)) < d is equivalent to the condition:
-// abs(f(x) - y) < d
-// We'll use this last one for function plotting. (in the previous one
-// we have to negate the function that we want to plot)
+// 函数示意图
+
+// 查看笛卡尔坐标系上的函数图，来了解函数执行效果是很有帮助的
+
+// 函数图是满足表达式的所有点：y-f(x)= 0，如果没有设置线条的厚度，无法看到线条
+// 使用满足以下条件的（x，y）集：-d < y - f(x) < d，换句话说 abs(y-f(x)) < d
+// d 是 y 方向上的厚度，由于绝对函数的性质，条件 abs(y-f(x)) < d 等价于 abs(f(x) - y) < d
 float linearstep(float edge0, float edge1, float x) {
   float t = (x - edge0) / (edge1 - edge0);
   return clamp(t, 0.0, 1.0);
@@ -752,77 +823,65 @@ void plot(vec2 r, float y, float lineThickness, vec3 color, inout vec3 pixel) {
   if (abs(y - r.y) < lineThickness) pixel = color;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+  float aspectRatio = iResolution.x / iResolution.y;
+
+  float x = r.x;
+  float y = r.y;
 
   vec3 bgCol = vec3(1.0);
   vec3 axesCol = vec3(0.0, 0.0, 1.0);
-  vec3 gridCol = vec3(0.5);
+  vec3 gridCol = vec3(0.8);
   vec3 col1 = vec3(0.841, 0.582, 0.594);
-  vec3 col2 = vec3(0.884, 0.850, 0.648);
-  vec3 col3 = vec3(0.348, 0.555, 0.641);
 
   vec3 pixel = bgCol;
 
-  // Draw grid lines
+  // 画网格线
   const float tickWidth = 0.1;
-  for (float i = -2.0; i < 2.0; i += tickWidth) {
-    // "i" is the line coordinate.
-    if (abs(r.x - i) < 0.004) pixel = gridCol;
-    if (abs(r.y - i) < 0.004) pixel = gridCol;
+  for (float i = -1.0; i < 1.0; i += tickWidth) {
+    if (abs(y - i) < 0.006) pixel = gridCol;
   }
-  // Draw the axes
-  if (abs(r.x) < 0.006) pixel = axesCol;
-  if (abs(r.y) < 0.007) pixel = axesCol;
+  for (float i = -1.0 * aspectRatio; i < 1.0 * aspectRatio; i+= tickWidth) {
+    if (abs(x - i) < 0.006) pixel = gridCol;
+  }
 
-  // Draw functions
-  float x = r.x;
-  float y = r.y;
-  // pink functions
-  // y = 2*x + 5
-  if (abs(2. * x + .5 - y) < 0.02) pixel = col1;
-  // y = x^2 - .2
-  if (abs(r.x * r.x - 0.2 - y) < 0.01) pixel = col1;
-  // y = sin(PI x)
-  if (abs(sin(PI * r.x) - y) < 0.02) pixel = col1;
+  // 画坐标轴
+  if (abs(x) < 0.006) pixel = axesCol;
+  if (abs(y) < 0.006) pixel = axesCol;
 
-  // blue functions, the step function variations
-  // (functions are scaled and translated vertically)
-  if (abs(0.25 * step(0.0, x) + 0.6 - y) < 0.01) pixel = col3;
-  if (abs(0.25 * linearstep(-0.5, 0.5, x) + 0.1 - y) < 0.01) pixel = col3;
-  if (abs(0.25 * smoothstep(-0.5, 0.5, x) - 0.4 - y) < 0.01) pixel = col3;
-  if (abs(0.25 * smootherstep(-0.5, 0.5, x) - 0.9 - y) < 0.01) pixel = col3;
+  // 一元一次方程：y = 2*x + 5
+  // if (abs(2.0 * x + 0.3 - y) < 0.02) pixel = col1;
 
-  // yellow functions
-  // have a function that plots functions :-)
-  plot(r, 0.5 * clamp(sin(TWOPI * x), 0.0, 1.0) - 0.7, 0.015, col2, pixel);
-  // bell curve around -0.5
-  plot(r, 0.6 * exp(-10.0 * (x + 0.8) * (x + 0.8)) - 0.1, 0.015, col2, pixel);
+  // 一元二次方程：y = x^2 - 2
+  // if (abs(x * x - 0.2 - y) < 0.02) pixel = col1;
 
-  fragColor = vec4(pixel, 1.0);
+  // 三角函数：y = sin(x)
+  // if (abs(sin(x * 10.0) - y * 10.0) < 0.1) pixel = col1;
+
+  // if (abs(0.25 * step(0.0, x) + 0.3 - y) < 0.01) pixel = col1;
+  // if (abs(0.25 * linearstep(-0.5, 0.5, x) + 0.1 - y) < 0.01) pixel = col1;
+  // if (abs(0.25 * smoothstep(-0.5, 0.5, x) - 0.4 - y) < 0.01) pixel = col1;
+  // if (abs(0.25 * smootherstep(-0.5, 0.5, x) - 0.9 - y) < 0.01) pixel = col1;
+
+  
+  // plot(r, 0.5 * clamp(sin(TWOPI * x), 0.0, 1.0) - 0.0, 0.015, col1, pixel);
+
+  plot(r, 0.6 * exp(-10.0 * (x + 0.8) * (x + 0.8)) - 0.0, 0.015, col1, pixel);
+
+  gl_FragColor = vec4(pixel, 1.0);
 }
-// in the future we can use this framework to see the plot of functions
-// and design and find functions for our liking
-// Actually using Mathematica, Matlab, matplotlib etc. to plot functions
-// is much more practical. But they need a translation of functions
-// from GLSL to their language. Here we can plot the native implementations
-// of GLSL functions.
 
 #elif TUTORIAL == 20
-// COLOR ADDITION AND SUBSTRACTION
-//
-// How to draw a shape on top of another, and how will the layers
-// below, affect the higher layers?
-//
-// In the previous shape drawing functions, we set the pixel
-// value from the function. This time the shape function will
-// just return a float value between 0.0 and 1.0 to indice the
-// shape area. Later that value can be multiplied with some color
-// and used in determining the final pixel color.
+// 颜色叠加
 
-// A function that returns the 1.0 inside the disk area
-// returns 0.0 outside the disk area
-// and has a smooth transition at the radius
+// 如何绘制更上层的形状，以及下面的图层将如何影响较高的图层？
+
+// 在以前的形状绘制函数中，我们从该函数设置像素值
+// 这次，shape函数将只返回介于0.0和1.0之间的float值，以指示形状区域
+// 之后，该值可以乘以某种颜色，并用于确定最终像素的颜色
+
+// 在磁盘区域内返回1.0的函数在磁盘区域外返回0.0，并且在半径方向上具有平滑过渡
 float disk(vec2 r, vec2 center, float radius) {
   float distanceFromCenter = length(r - center);
   float outsideOfDisk =
@@ -831,9 +890,9 @@ float disk(vec2 r, vec2 center, float radius) {
   return insideOfDisk;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float xMax = iResolution.x / iResolution.y;
 
   vec3 black = vec3(0.0);
@@ -846,77 +905,70 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 ret;
   float d;
 
-  if (p.x < 1. / 3.) {  // Part I
-    // opaque layers on top of each other
+  if (p.x < 1.0 / 3.0) { // Part I
+    // 彼此顶部的不透明层
     ret = gray;
-    // assign a gray value to the pixel first
+    // 首先为像素分配灰度值
     d = disk(r, vec2(-1.1, 0.3), 0.4);
-    ret = mix(ret, col1, d);  // mix the previous color value with
-                              // the new color value according to
-                              // the shape area function.
-                              // at this line, previous color is gray.
+    ret = mix(ret, col1, d);  // 根据形状区域功能将先前的颜色值与新的颜色值混合，之前颜色是灰色
     d = disk(r, vec2(-1.3, 0.0), 0.4);
     ret = mix(ret, col2, d);
     d = disk(r, vec2(-1.05, -0.3), 0.4);
-    ret = mix(ret, col3, d);   // here, previous color can be gray,
-                               // blue or pink.
-  } else if (p.x < 2. / 3.) {  // Part II
-    // Color addition
-    // This is how lights of different colors add up
+    ret = mix(ret, col3, d);   // 在这里，以前的颜色可以是灰色，蓝色或粉红色
+  } else if (p.x < 2. / 3.) { // Part II
+    // 颜色添加
+    // 这就是不同颜色的灯光相加的方式
     // http://en.wikipedia.org/wiki/Additive_color
-    ret = black;                                 // start with black pixels
-    ret += disk(r, vec2(0.1, 0.3), 0.4) * col1;  // add the new color
-                                                 // to the previous color
+    ret = black; // 从黑色像素开始，将新颜色添加到以前的颜色
+
+    ret += disk(r, vec2(0.1, 0.3), 0.4) * col1;
     ret += disk(r, vec2(-.1, 0.0), 0.4) * col2;
     ret += disk(r, vec2(.15, -0.3), 0.4) * col3;
-    // when all components of "ret" becomes equal or higher than 1.0
-    // it becomes white.
+
+    // 当 ret 的所有分量等于或大于1.0时，它将变为白色
   } else if (p.x < 3. / 3.) {  // Part III
-    // Color substraction
-    // This is how dye of different colors add up
+    // 颜色减少
     // http://en.wikipedia.org/wiki/Subtractive_color
-    ret = white;  // start with white
+    ret = white;  // 从白色开始
     ret -= disk(r, vec2(1.1, 0.3), 0.4) * col1;
     ret -= disk(r, vec2(1.05, 0.0), 0.4) * col2;
     ret -= disk(r, vec2(1.35, -0.25), 0.4) * col3;
-    // when all components of "ret" becomes equals or smaller than 0.0
-    // it becomes black.
+    // 当 ret 的所有分量等于或小于0.0时，它将变为黑色
   }
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 21
-// COORDINATE TRANSFORMATIONS: ROTATION
-//
-// Up to now, we translated to coordinate center to draw geometric
-// shapes at different parts of the screen.
-// Lets learn how to rotate the shapes.
+// 坐标转换：旋转
 
-// a function that draws an (anti-aliased) grid of coordinate system
+// 我们已转换到坐标中心以在屏幕的不同部分绘制几何形状
+
+// 绘制坐标系统（抗锯齿）网格的函数
 float coordinateGrid(vec2 r) {
   vec3 axesCol = vec3(0.0, 0.0, 1.0);
   vec3 gridCol = vec3(0.5);
   float ret = 0.0;
 
-  // Draw grid lines
   const float tickWidth = 0.1;
+  // 画网格线
   for (float i = -2.0; i < 2.0; i += tickWidth) {
     // "i" is the line coordinate.
     ret += 1. - smoothstep(0.0, 0.008, abs(r.x - i));
     ret += 1. - smoothstep(0.0, 0.008, abs(r.y - i));
   }
-  // Draw the axes
+  // 画坐标轴
   ret += 1. - smoothstep(0.001, 0.015, abs(r.x));
   ret += 1. - smoothstep(0.001, 0.015, abs(r.y));
   return ret;
 }
-// returns 1.0 if inside circle
+
+// 如果在圆内则返回1.0
 float disk(vec2 r, vec2 center, float radius) {
   return 1.0 - smoothstep(radius - 0.005, radius + 0.005, length(r - center));
 }
-// returns 1.0 if inside the rectangle
+// 如果在矩形内则返回1.0
 float rectangle(vec2 r, vec2 topLeft, vec2 bottomRight) {
   float ret;
   float d = 0.005;
@@ -927,49 +979,47 @@ float rectangle(vec2 r, vec2 topLeft, vec2 bottomRight) {
   return ret;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float xMax = iResolution.x / iResolution.y;
 
   vec3 bgCol = vec3(1.0);
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
+  vec3 col1 = vec3(0.216, 0.471, 0.698);
+  vec3 col2 = vec3(1.00, 0.329, 0.298);
 
   vec3 ret;
 
   vec2 q;
   float angle;
-  angle = 0.2 * PI;  // angle in radians (PI is 180 degrees)
-  // q is the rotated coordinate system
+  angle = 0.1 * PI;  // 弧度角（PI为180度）
+  // q 是旋转坐标系
   q.x = cos(angle) * r.x + sin(angle) * r.y;
   q.y = -sin(angle) * r.x + cos(angle) * r.y;
 
   ret = bgCol;
-  // draw the old and new coordinate systems
+  // 绘制新旧坐标系
   ret = mix(ret, col1, coordinateGrid(r) * 0.4);
-  ret = mix(ret, col2, coordinateGrid(q));
+  ret = mix(ret, col2, coordinateGrid(q) * 0.4);
 
-  // draw shapes in old coordinate system, r, and new coordinate system, q
+  // 在旧坐标系 r 和新坐标系 q 中绘制形状
+  // 旧坐标系
   ret = mix(ret, col1, disk(r, vec2(1.0, 0.0), 0.2));
-  ret = mix(ret, col2, disk(q, vec2(1.0, 0.0), 0.2));
   ret = mix(ret, col1, rectangle(r, vec2(-0.8, 0.2), vec2(-0.5, 0.4)));
+  // 新坐标系
+  ret = mix(ret, col2, disk(q, vec2(1.0, 0.0), 0.2));
   ret = mix(ret, col2, rectangle(q, vec2(-0.8, 0.2), vec2(-0.5, 0.4)));
-  // as you see both circle are drawn at the same coordinate, (1,0),
-  // in their respective coordinate systems. But they appear
-  // on different locations of the screen
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 22
-// COORDINATE TRANSFORMATIONS: SCALING
-//
-// Scaling the coordinate system.
+// 坐标转换：缩放
 
-// a function that draws an (anti-aliased) grid of coordinate system
+// 缩放坐标系
+
+// 绘制坐标系统（抗锯齿）网格的函数
 float coordinateGrid(vec2 r) {
   vec3 axesCol = vec3(0.0, 0.0, 1.0);
   vec3 gridCol = vec3(0.5);
@@ -1002,52 +1052,46 @@ float rectangle(vec2 r, vec2 topLeft, vec2 bottomRight) {
   return ret;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float xMax = iResolution.x / iResolution.y;
 
   vec3 bgCol = vec3(1.0);
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
+  vec3 col1 = vec3(0.216, 0.471, 0.698);
+  vec3 col2 = vec3(1.00, 0.329, 0.298);
+  vec3 col3 = vec3(0.867, 0.910, 0.247);
 
   vec3 ret = bgCol;
 
-  // original
+  // 原版坐标系
   ret = mix(ret, col1, coordinateGrid(r) / 2.0);
-  // scaled
-  float scaleFactor = 3.3;  // zoom in this much
+
+  // 缩放版本坐标系
+  float scaleFactor = 3.0;  // zoom in this much
   vec2 q = r / scaleFactor;
   ret = mix(ret, col2, coordinateGrid(q) / 2.0);
 
+  // 缩放版本图形
   ret = mix(ret, col2, disk(q, vec2(0.0, 0.0), 0.1));
-  ret = mix(ret, col1, disk(r, vec2(0.0, 0.0), 0.1));
-
-  ret = mix(ret, col1, rectangle(r, vec2(-0.5, 0.0), vec2(-0.2, 0.2)));
   ret = mix(ret, col2, rectangle(q, vec2(-0.5, 0.0), vec2(-0.2, 0.2)));
 
-  // note how the rectangle that are not centered at the coordinate origin
-  // changed its location after scaling, but the disks at the center
-  // remained where they are.
-  // This is because scaling is done by multiplying all pixel
-  // coordinates with a constant.
+  // 原版图形
+  ret = mix(ret, col1, disk(r, vec2(0.0, 0.0), 0.1));
+  ret = mix(ret, col1, rectangle(r, vec2(-0.5, 0.0), vec2(-0.2, 0.2)));
+
+  // 请注意在缩放后，未居中于坐标原点的矩形如何更改其位置，但居中的圆盘仍保持原样
+  // 这是因为缩放是通过将所有像素坐标乘以一个常数来完成的
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 23
-// SUCCESSIVE COORDINATE TRANSFORMATIONS
-//
-// Drawing a shape on the desired location, with desired size, and
-// desired orientation needs mastery of succesive application of
-// transformations.
-//
-// In general, transformations do not commute. Which means that
-// if you change their order, you get different results.
-//
-// Let's try application of transformations in different orders.
+// 连续坐标转换
+
+// 在所需位置，所需尺寸和所需方向上绘制形状需要连续的坐标转换
+// 改变转换的循序通常会得到不同的结果
 
 float coordinateGrid(vec2 r) {
   vec3 axesCol = vec3(0.0, 0.0, 1.0);
@@ -1081,23 +1125,23 @@ float rectangle(vec2 r, vec2 topLeft, vec2 bottomRight) {
   return ret;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float xMax = iResolution.x / iResolution.y;
 
   vec3 bgCol = vec3(1.0);
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
+  vec3 col1 = vec3(0.216, 0.471, 0.698);
+  vec3 col2 = vec3(1.00, 0.329, 0.298);
+  vec3 col3 = vec3(0.867, 0.910, 0.247);
 
   vec3 ret = bgCol;
 
   float angle = 0.6;
   mat2 rotationMatrix = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 
-  if (p.x < 1. / 2.) {  // Part I
-    // put the origin at the center of Part I
+  if (p.x < 1.0 / 2.0) {  // Part I
+    // 将原点放在中心
     r = r - vec2(-xMax / 2.0, 0.0);
 
     vec2 rotated = rotationMatrix * r;
@@ -1110,7 +1154,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     ret = mix(ret, col2, rectangle(rotated, vec2(-.1, -.2), vec2(0.1, 0.2)));
     ret = mix(ret, col3,
               rectangle(rotatedTranslated, vec2(-.1, -.2), vec2(0.1, 0.2)));
-  } else if (p.x < 2. / 2.) {  // Part II
+  } else if (p.x < 2.0 / 2.0) {  // Part II
     r = r - vec2(xMax * 0.5, 0.0);
 
     vec2 translated = r - vec2(0.4, 0.5);
@@ -1127,17 +1171,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 24
-// TIME, MOTION AND ANIMATION
-//
-// One of the inputs that a shader gets can be the time.
-// In ShaderToy, "iTime" variable holds the value of the
-// time in seconds since the shader is started.
-//
-// Let's change some variables in time!
+// 时间、动作和动画
+
+// 着色器获得的输入之一可以是时间
+// 在ShaderToy中，"iTime"变量保存自着色器启动以来的时间值（以秒为单位）
 
 float disk(vec2 r, vec2 center, float radius) {
   return 1.0 - smoothstep(radius - 0.005, radius + 0.005, length(r - center));
@@ -1153,69 +1194,66 @@ float rect(vec2 r, vec2 bottomLeft, vec2 topRight) {
   return ret;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float xMax = iResolution.x / iResolution.y;
 
   vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
+  vec3 col2 = vec3(1.00, 0.329, 0.298);   // red
+  vec3 col3 = vec3(0.867, 0.910, 0.247);  // yellow
 
   vec3 ret;
 
-  if (p.x < 1. / 5.) {  // Part I
+  if (p.x < 1.0 / 5.0) { // Part I
     vec2 q = r + vec2(xMax * 4. / 5., 0.);
     ret = vec3(0.2);
-    // y coordinate depends on time
+    // y坐标取决于时间
     float y = iTime;
-    // mod constraints y to be between 0.0 and 2.0,
-    // and y jumps from 2.0 to 0.0
-    // substracting -1.0 makes why jump from 1.0 to -1.0
+    // mod约束 y [0.0, 2.0] 减去 -1.0 使得 y [-1.0, 1.0]
     y = mod(y, 2.0) - 1.0;
     ret = mix(ret, col1, disk(q, vec2(0.0, y), 0.1));
-  } else if (p.x < 2. / 5.) {  // Part II
-    vec2 q = r + vec2(xMax * 2. / 5., 0.);
+  } else if (p.x < 2.0 / 5.0) { // Part II
+    vec2 q = r + vec2(xMax * 2.0 / 5.0, 0.);
     ret = vec3(0.3);
-    // oscillation
+    // 震动的幅度
     float amplitude = 0.8;
-    // y coordinate oscillates with a period of 0.5 seconds
-    float y = 0.8 * sin(0.5 * iTime * TWOPI);
-    // radius oscillates too
-    float radius = 0.15 + 0.05 * sin(iTime * 8.0);
+    // y坐标以0.5秒的周期振荡
+    float y = amplitude * sin(0.5 * iTime * TWOPI);
+    // 半径也震荡
+    float radius = 0.15 + 0.05 * sin(0.5 * iTime * TWOPI);
     ret = mix(ret, col1, disk(q, vec2(0.0, y), radius));
-  } else if (p.x < 3. / 5.) {  // Part III
-    vec2 q = r + vec2(xMax * 0. / 5., 0.);
+  } else if (p.x < 3. / 5.) { // Part III
+    vec2 q = r + vec2(xMax * 0.0 / 5.0, 0.0);
     ret = vec3(0.4);
-    // booth coordinates oscillates
+    // 展位坐标振荡
     float x = 0.2 * cos(iTime * 5.0);
-    // but they have a phase difference of PI/2
+    // 相位差为 PI / 2
     float y = 0.3 * cos(iTime * 5.0 + PI / 2.0);
     float radius = 0.2 + 0.1 * sin(iTime * 2.0);
-    // make the color mixture time dependent
+    // 使颜色混合时间取决于时间
     vec3 color = mix(col1, col2, sin(iTime) * 0.5 + 0.5);
     ret = mix(ret, color,
               rect(q, vec2(x - 0.1, y - 0.1), vec2(x + 0.1, y + 0.1)));
-    // try different phases, different amplitudes and different frequencies
-    // for x and y coordinates
-  } else if (p.x < 4. / 5.) {  // Part IV
+    // 为x和y坐标尝试不同的相位，不同的幅度和不同的频率
+  } else if (p.x < 4.0 / 5.0) { // Part IV
     vec2 q = r + vec2(-xMax * 2. / 5., 0.);
     ret = vec3(0.3);
     for (float i = -1.0; i < 1.0; i += 0.2) {
       float x = 0.2 * cos(iTime * 5.0 + i * PI);
-      // y coordinate is the loop value
+      // y坐标是循环值
       float y = i;
       vec2 s = q - vec2(x, y);
-      // each box has a different phase
+      // 每个盒子都有不同的阶段
       float angle = iTime * 3. + i;
       mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
       s = rot * s;
       ret = mix(ret, col1, rect(s, vec2(-0.06, -0.06), vec2(0.06, 0.06)));
     }
-  } else if (p.x < 5. / 5.) {  // Part V
+  } else if (p.x < 5.0 / 5.0) { // Part V
     vec2 q = r + vec2(-xMax * 4. / 5., 0.);
     ret = vec3(0.2);
-    // let stop and move again periodically
+    // 停下来并定期再次移动
     float speed = 2.0;
     float t = iTime * speed;
     float stopEveryAngle = PI / 2.0;
@@ -1231,11 +1269,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 25
-// PLASMA EFFECT
+// 等离子效果
 //
 // We said that the a pixel's color only depends on its coordinates
 // and other inputs (such as time)
@@ -1247,9 +1285,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 //
 // http://en.wikipedia.org/wiki/Plasma_effect
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float t = iTime;
   r = r * 8.0;
 
@@ -1262,25 +1300,25 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 ret;
 
   if (p.x < 1. / 10.) {  // Part I
-    // vertical waves
+    // 垂直波
     ret = vec3(v1);
   } else if (p.x < 2. / 10.) {  // Part II
-    // horizontal waves
+    // 水平波
     ret = vec3(v2);
   } else if (p.x < 3. / 10.) {  // Part III
-    // diagonal waves
+    // 斜波
     ret = vec3(v3);
   } else if (p.x < 4. / 10.) {  // Part IV
-    // circular waves
+    // 圆波
     ret = vec3(v4);
   } else if (p.x < 5. / 10.) {  // Part V
-    // the sum of all waves
+    // 所有波的总和
     ret = vec3(v);
   } else if (p.x < 6. / 10.) {  // Part VI
-    // Add periodicity to the gradients
+    // 为渐变添加周期性
     ret = vec3(sin(2. * v));
   } else if (p.x < 10. / 10.) {  // Part VII
-    // mix colors
+    // 混合颜色
     v *= 1.0;
     ret = vec3(sin(v), sin(v + 0.5 * PI), sin(v + 1.0 * PI));
   }
@@ -1288,11 +1326,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ret = 0.5 + 0.5 * ret;
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.);
+  gl_FragColor = vec4(pixel, 1.);
 }
 
 #elif TUTORIAL == 26
-// TEXTURES
+// 纹理
 //
 // ShaderToy can use upto four textures.
 
@@ -1306,9 +1344,9 @@ float rect(vec2 r, vec2 bottomLeft, vec2 topRight) {
   return ret;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float xMax = iResolution.x / iResolution.y;
 
   vec3 bgCol = vec3(0.3);
@@ -1318,11 +1356,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
   vec3 ret;
 
-  if (p.x < 1. / 3.) {  // Part I
+  if (p.x < 1. / 3.) { // Part I
     ret = texture(iChannel1, p).xyz;
-  } else if (p.x < 2. / 3.) {  // Part II
+  } else if (p.x < 2. / 3.) { // Part II
     ret = texture(iChannel1, 4. * p + vec2(0., iTime)).xyz;
-  } else if (p.x < 3. / 3.) {  // Part III
+  } else if (p.x < 3. / 3.) { // Part III
     r = r - vec2(xMax * 2. / 3., 0.);
     float angle = iTime;
     mat2 rotMat = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
@@ -1337,82 +1375,22 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 27
-// MOUSE INPUT
-//
-// ShaderToy gives the mouse cursor coordinates and button clicks
-// as an input via the iMouse vec4.
-//
-// Let's write a shader with basic Mouse functionality.
-// When clicked on the frame, the little disk will follow the
-// cursor. The x coordinate of the cursor changes the background color.
-// And if the cursor is inside the bigger disk, it'll color will change.
+// 随机
 
-float disk(vec2 r, vec2 center, float radius) {
-  return 1.0 - smoothstep(radius - 0.5, radius + 0.5, length(r - center));
-}
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
-  float xMax = iResolution.x / iResolution.y;
-
-  // background color depends on the x coordinate of the cursor
-  vec3 bgCol = vec3(iMouse.x / iResolution.x);
-  vec3 col1 = vec3(0.216, 0.471, 0.698);  // blue
-  vec3 col2 = vec3(1.00, 0.329, 0.298);   // yellow
-  vec3 col3 = vec3(0.867, 0.910, 0.247);  // red
-
-  vec3 ret = bgCol;
-
-  vec2 center;
-  // draw the big yellow disk
-  center = vec2(100., iResolution.y / 2.);
-  float radius = 60.;
-  // if the cursor coordinates is inside the disk
-  if (length(iMouse.xy - center) > radius) {
-    // use color3
-    ret = mix(ret, col3, disk(fragCoord.xy, center, radius));
-  } else {
-    // else use color2
-    ret = mix(ret, col2, disk(fragCoord.xy, center, radius));
-  }
-
-  // draw the small blue disk at the cursor
-  center = iMouse.xy;
-  ret = mix(ret, col1, disk(fragCoord.xy, center, 20.));
-
-  vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
-}
-
-#elif TUTORIAL == 28
-// RANDOMNESS
-//
-// I don't know why, but GLSL does not have random number generators.
-// This does not pose a problem if you are writing your code in
-// a programming language that has random functions. That way
-// you can generate the random values using the language and send
-// those values to the shader via uniforms.
-//
-// But if you are using a system that only allows you to write
-// the shader code, such as ShaderToy, then you need to write your own
-// pseuo-random generators.
-//
-// Here is a pattern that I saw again and again in many different
-// shaders at ShaderToy.
-// Let's draw N different disks at random locations using this pattern.
+// shader 语言中没有自己的随机函数，可以在主程序中实现随机并通过 uniforms 传入
+// 或者实现一个 shader 内部的随机算法
 
 float hash(float seed) {
-  // Return a "random" number based on the "seed"
+  // 根据 seed 返回一个随机数
   return fract(sin(seed) * 43758.5453);
 }
 
 vec2 hashPosition(float x) {
-  // Return a "random" position based on the "seed"
+  // 根据 seed 返回一个随机坐标根据
   return vec2(hash(x), hash(x * 1.1));
 }
 
@@ -1442,9 +1420,9 @@ float plot(vec2 r, float y, float thickness) {
   return (abs(y - r.y) < thickness) ? 1.0 : 0.0;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = vec2(fragCoord.xy / iResolution.xy);
-  vec2 r = 2.0 * vec2(fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+void main() {
+  vec2 p = vec2(gl_FragCoord.xy / iResolution.xy);
+  vec2 r = 2.0 * vec2(gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
   float xMax = iResolution.x / iResolution.y;
 
   vec3 bgCol = vec3(0.3);
@@ -1457,11 +1435,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 white = vec3(1.);
   vec3 gray = vec3(.3);
   if (r.y > 0.7) {
-    // translated and rotated coordinate system
+    // 平移和旋转坐标系
     vec2 q = (r - vec2(0., 0.9)) * vec2(1., 20.);
     ret = mix(white, gray, coordinateGrid(q));
 
-    // just the regular sin function
     float y = sin(5. * q.x) * 2.0 - 1.0;
 
     ret = mix(ret, col1, plot(q, y, 0.1));
@@ -1469,7 +1446,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 q = (r - vec2(0., 0.6)) * vec2(1., 20.);
     ret = mix(white, col1, coordinateGrid(q));
 
-    // take the decimal part of the sin function
+    // 取 sin 函数的小数部分
     float y = fract(sin(5. * q.x)) * 2.0 - 1.0;
 
     ret = mix(ret, col2, plot(q, y, 0.1));
@@ -1478,9 +1455,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 q = (r - vec2(0., 0.25)) * vec2(1., 20.);
     ret = mix(white, gray, coordinateGrid(q));
 
-    // scale up the outcome of the sine function
-    // increase the scale and see the transition from
-    // periodic pattern to chaotic pattern
+    // 扩大正弦函数的结果，增加规模，并看到从周期性模式到混沌模式的转变
     float scale = 10.0;
     float y = fract(sin(5. * q.x) * scale) * 2.0 - 1.0;
 
@@ -1491,23 +1466,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     ret = mix(white, col1, coordinateGrid(q));
 
     float seed = q.x;
-    // Scale up with a big real number
+    // 大量增加规模
     float y = fract(sin(seed) * 43758.5453) * 2.0 - 1.0;
-    // this can be used as a pseudo-random value
-    // These type of function, functions in which two inputs
-    // that are close to each other (such as close q.x positions)
-    // return highly different output values, are called "hash"
-    // function.
 
     ret = mix(ret, col2, plot(q, y, 0.1));
   } else {
     vec2 q = (r - vec2(0., -0.6));
 
-    // use the loop index as the seed
-    // and vary different quantities of disks, such as
-    // location and radius
+    // 使用循环索引作为种子，并更改不同数量的磁盘，例如位置和半径
     for (float i = 0.0; i < 6.0; i++) {
-      // change the seed and get different distributions
+      // 改变种子并获得不同的分布
       float seed = i + 0.0;
       vec2 pos = (vec2(hash(seed), hash(seed + 0.5)) - 0.5) * 3.;
       ;
@@ -1518,110 +1486,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
 
   vec3 pixel = ret;
-  fragColor = vec4(pixel, 1.0);
-}
-
-/* End of tutorials */
-
-#elif TUTORIAL == 0
-// WELCOME SCREEN
-float square(vec2 r, vec2 bottomLeft, float side) {
-  vec2 p = r - bottomLeft;
-  return (p.x > 0.0 && p.x < side && p.y > 0.0 && p.y < side) ? 1.0 : 0.0;
-}
-
-float character(vec2 r, vec2 bottomLeft, float charCode, float squareSide) {
-  vec2 p = r - bottomLeft;
-  float ret = 0.0;
-  float num, quotient, remainder, divider;
-  float x, y;
-  num = charCode;
-  for (int i = 0; i < 20; i++) {
-    float boxNo = float(19 - i);
-    divider = pow(2., boxNo);
-    quotient = floor(num / divider);
-    remainder = num - quotient * divider;
-    num = remainder;
-
-    y = floor(boxNo / 4.0);
-    x = boxNo - y * 4.0;
-    if (quotient == 1.) {
-      ret += square(p, squareSide * vec2(x, y), squareSide);
-    }
-  }
-  return ret;
-}
-
-mat2 rot(float th) { return mat2(cos(th), -sin(th), sin(th), cos(th)); }
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float G = 990623.;  // compressed characters :-)
-  float L = 69919.;
-  float S = 991119.;
-
-  float t = iTime;
-
-  vec2 r = (fragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
-  // vec2 rL = rot(t)*r+0.0001*t;
-  // vec2 rL = r+vec2(cos(t*0.02),sin(t*0.02))*t*0.05;
-  float c = 0.05;  //+0.03*sin(2.5*t);
-  vec2 pL = (mod(r + vec2(cos(0.3 * t), sin(0.3 * t)), 2.0 * c) - c) / c;
-  float circ = 1.0 - smoothstep(0.75, 0.8, length(pL));
-  vec2 rG = rot(2. * 3.1415 * smoothstep(0., 1., mod(1.5 * t, 4.0))) * r;
-  vec2 rStripes = rot(0.2) * r;
-
-  float xMax = 0.5 * iResolution.x / iResolution.y;
-  float letterWidth = 2.0 * xMax * 0.9 / 4.0;
-  float side = letterWidth / 4.;
-  float space = 2.0 * xMax * 0.1 / 5.0;
-
-  r += 0.001;  // to get rid off the y=0 horizontal blue line.
-  float maskGS = character(
-      r,
-      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 0.0,
-      G, side);
-  float maskG = character(
-      rG,
-      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 0.0,
-      G, side);
-  float maskL1 = character(
-      r,
-      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 1.0,
-      L, side);
-  float maskSS = character(
-      r,
-      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 2.0,
-      S, side);
-  float maskS = character(r,
-                          vec2(-xMax + space, -2.5 * side) +
-                              vec2(letterWidth + space, 0.0) * 2.0 +
-                              vec2(0.01 * sin(2.1 * t), 0.012 * cos(t)),
-                          S, side);
-  float maskL2 = character(
-      r,
-      vec2(-xMax + space, -2.5 * side) + vec2(letterWidth + space, 0.0) * 3.0,
-      L, side);
-  float maskStripes = step(0.25, mod(rStripes.x - 0.5 * t, 0.5));
-
-  float i255 = 0.00392156862;
-  vec3 blue = vec3(43., 172., 181.) * i255;
-  vec3 pink = vec3(232., 77., 91.) * i255;
-  vec3 dark = vec3(59., 59., 59.) * i255;
-  vec3 light = vec3(245., 236., 217.) * i255;
-  vec3 green = vec3(180., 204., 18.) * i255;
-
-  vec3 pixel = blue;
-  pixel = mix(pixel, light, maskGS);
-  pixel = mix(pixel, light, maskSS);
-  pixel -= 0.1 * maskStripes;
-  pixel = mix(pixel, green, maskG);
-  pixel = mix(pixel, pink, maskL1 * circ);
-  pixel = mix(pixel, green, maskS);
-  pixel = mix(pixel, pink, maskL2 * (1. - circ));
-
-  float dirt = pow(texture(iChannel0, 4.0 * r).x, 4.0);
-  pixel -= (0.2 * dirt - 0.1) * (maskG + maskS);  // dirt
-  pixel -= smoothstep(0.45, 2.5, length(r));
-  fragColor = vec4(pixel, 1.0);
+  gl_FragColor = vec4(pixel, 1.0);
 }
 #endif
