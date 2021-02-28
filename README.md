@@ -5,8 +5,8 @@
 - [x] 可以在 VSCode 中查看 GLSL 着色器的实时 WebGL 预览
 - [x] 支持到行的编辑器内语法错误提示
 - [x] 支持 16:9 与 9:16 等横竖屏效果预览
-- [ ] 提供业务 shader 脚本导出能力
-- [ ] 提供类似 [gl-transition](https://gl-transitions.com/) 的贝塞尔配置能力
+- [x] 提供业务 shader 脚本导出能力
+- [x] 提供 uniform 配置与动态更改能力
 
 ## 安装
 
@@ -14,7 +14,9 @@ VSCode Extension 搜索 `Shader factory`
 
 ## 使用
 
-打开片元着色器，可以参考本项目 `glsl` 目录，随便打开一个 glsl 文件，`shift + cmd + p` 搜索 `shader factory`
+打开片元着色器，可以参考 shader 学习项目：
+
+打开一个 glsl 文件，`shift + cmd + p` 搜索 `shader factory`
 
 - `Shader Factory: Show Shader Preview`，直接实时预览 
 - `Shader Factory: Create HTML`，导出 HTML
@@ -24,15 +26,16 @@ VSCode Extension 搜索 `Shader factory`
 
 ## 开发
 
-`npm i`
-
 ```sh
+# 安装
+npm i
+
 # 开启编译监听
 npm run dev
 
 # 打开 VSC Debug：Run Extension
 
-# 打开 glsls 文件夹，选择对应的 glsl 进入开发
+# 在 shader 文件中按下 shift + cmd + p 选择 Shader Factory: Show Shader Preview
 ```
 
 ## 发布
