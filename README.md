@@ -14,7 +14,7 @@ VSCode Extension 搜索 `Shader factory`
 
 ## 使用
 
-打开片元着色器，可以参考 shader 学习项目：
+打开片元着色器，可以参考 shader 学习项目：https://github.com/ringcrl/cs-notes/tree/master/%E5%89%8D%E7%AB%AF/Shader/glsls
 
 打开一个 glsl 文件，`shift + cmd + p` 搜索 `shader factory`
 
