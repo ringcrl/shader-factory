@@ -5,9 +5,8 @@ export class ExportStyleExtension implements WebviewExtension {
     return `
       #export-glsl {
         position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
+        top: 1%;
+        left: 52%;
         color: #fff;
         padding: 3px 5px;
         background: #000;

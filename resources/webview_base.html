@@ -50,11 +50,15 @@
     }
 
     #dat_gui_container {
-      position: absolute;
+      /* position: absolute;
       left: 50%;
       transform: translateX(-50%);
       top: 45%;
-      z-index: 3;
+      z-index: 3; */
+
+      margin: 50px auto;
+      display: flex;
+      justify-content: center;
     }
 
     /* Pause Button Style */
@@ -71,7 +75,6 @@
 
 <body>
   <div id="message"></div>
-  <div id="dat_gui_container"></div>
   <div id="container">
     <!-- Resolution Button -->
 
@@ -92,6 +95,8 @@
 <!-- dat.gui -->
 
 <canvas id="canvas"></canvas>
+
+<div id="dat_gui_container"></div>
 
 <!-- Shaders -->
 
@@ -355,32 +360,37 @@ void main(void) {
     frameCounter++;
   }
   function computeSize() {
-    let forceAspectRatio = (width, height) => {
-      // Forced aspect ratio
-      let forcedAspects = [<!-- Forced Aspect -->];
+    // Forced aspect ratio
+    let forcedAspects = [<!-- Forced Aspect -->];
+    let forcedAspectRatio = forcedAspects[0] / forcedAspects[1];
 
-      let forcedAspectRatio = forcedAspects[0] / forcedAspects[1];
+    let forceAspectRatio = (width, height) => {
+
+
       let aspectRatio = width / height;
 
       if (forcedAspectRatio <= 0 || !isFinite(forcedAspectRatio)) {
         let resolution = new THREE.Vector3(width, height, 1.0);
         return resolution;
-      }
-      else if (aspectRatio < forcedAspectRatio) {
+      } else if (aspectRatio < forcedAspectRatio) {
         let resolution = new THREE.Vector3(width, Math.floor(width / forcedAspectRatio), 1);
         return resolution;
-      }
-      else {
+      } else {
         let resolution = new THREE.Vector3(Math.floor(height * forcedAspectRatio), height, 1);
         return resolution;
       }
     };
 
     // Compute forced aspect ratio and align canvas
-    resolution = forceAspectRatio(window.innerWidth, window.innerHeight * 0.4);
+    const width = window.innerWidth;
+    let height = window.innerHeight * 0.4;
+    if (forcedAspectRatio <= 9 / 16) {
+      height *= 2;
+    }
+    resolution = forceAspectRatio(width, height);
+    
     canvas.style.left = `${(window.innerWidth - resolution.x) / 2}px`;
-    //   canvas.style.top = `${(window.innerHeight - resolution.y) / 2}px`;
-    canvas.style.top = `30px`;
+    canvas.style.top = `40px`;
 
     for (let buffer of buffers) {
       if (buffer.Target) {

@@ -5,9 +5,8 @@ export class ResolutionStyleExtension implements WebviewExtension {
     return `
       #resolutions {
         position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
+        top: 1%;
+        left: 28%;
         color: #fff;
         padding: 3px 5px;
         background: #000;

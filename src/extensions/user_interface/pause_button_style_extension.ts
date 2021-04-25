@@ -14,12 +14,11 @@ export class PauseButtonStyleExtension implements WebviewExtension {
     return `
       /* Container for pause button */
       .button-container, .container {
-          text-align: center;
-          position: absolute;
-          bottom: 0;
-          left: 20px;
-          height: 80px;
-          z-index: 1;
+        text-align: center;
+        position: absolute;
+        top: 1%;
+        left: 10px;
+        z-index: 1;
       }
 
       /* Hide the browser's default checkbox */
@@ -31,22 +30,22 @@ export class PauseButtonStyleExtension implements WebviewExtension {
 
       /* Custom checkbox style */
       .pause-play {
-          position: absolute;
-          border: none;
-          padding: 26px;
-          text-align: center;
-          text-decoration: none;
-          font-size: 16px;
-          border-radius: 8px;
-          margin: 0px 8px;
-          transform: translateX(-50%);
-          background: url('${this.pauseResourcePath}');
-          background-size: 40px;
-          background-repeat: no-repeat;
-          background-position: center;
-          background-color: rgba(128, 128, 128, 0.5);
-          z-index: 1;
-          bottom: 0;
+        position: absolute;
+        border: none;
+        padding: 13px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        border-radius: 8px;
+        margin: 0px 8px;
+        transform: translateX(-50%);
+        background: url(vscode-webview-resource://dd800b68-3672-4e54-8736-3762f375d3ea/file///Users/ringcrl/Documents/github/shader-factory/resources/pause.png);
+        background-size: 20px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-color: rgba(128, 128, 128, 0.5);
+        z-index: 1;
+        top: 1%;
       }
 
       
@@ -60,7 +59,7 @@ export class PauseButtonStyleExtension implements WebviewExtension {
       }
       .button-container input:checked ~ .pause-play {
           background: url('${this.playResourcePath}');
-          background-size: 40px;
+          background-size: 20px;
           background-repeat: no-repeat;
           background-position: center;
           background-color: rgba(128, 128, 128, 0.5);
